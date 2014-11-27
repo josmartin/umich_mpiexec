@@ -23,7 +23,7 @@ classdef ( Sealed ) UMICH
             iCommunicatingSubmitFcn(cluster, job, props)
         end
         
-        function jobState = getJobState( cluster, job, ~ )
+        function jobState = getJobStateFcn( cluster, job, ~ )
             jobState = iGetJobState( cluster, job );
         end
     end
