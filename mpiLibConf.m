@@ -27,6 +27,13 @@ function [lib, extras] = mpiLibConf
 %   Brock Palen
 %   hpc-support@umich.edu
 
+% Default back to installed MPICH2 if using local scheduler
+if ~isempty(getenv('MDCE_USE_ML_LICENSING'))
+    % Simply pick up the default library
+    [lib, extras] = distcomp.mpiLibConfs( 'default' );
+    return
+end
+
 % network can be 'ib' or 'ethernet'
 network = '';
 

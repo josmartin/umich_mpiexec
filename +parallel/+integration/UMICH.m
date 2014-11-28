@@ -139,10 +139,6 @@ variables = variables(nonEmptyValues, :);
 for ii = 1:size(variables, 1)
     setenv(variables{ii,1}, variables{ii,2});
 end
-% Which variables do we need to forward for the job?  Take all
-% those that we have set.
-variablesToForward = variables(:,1);
-
 
 % Choose a file for the output. Please note that currently, JobStorageLocation refers
 % to a directory on disk, but this may change in the future.
@@ -153,31 +149,22 @@ import parallel.internal.apishared.FilenameUtils
 
 matlabExe = FilenameUtils.quoteForClient( props.MatlabExecutable );
 
-% ---------------------------------------
-%     Specific to LOCAL
-% ---------------------------------------
+% -------------------------------------------------------------------------
+%     Script that guarantees to create mpiexecCommand and mpiexecArgs based
+%     on all the variables that exist at this point
+% -------------------------------------------------------------------------
 
-mpiargs = parallel.internal.apishared.SmpdGateway.getMpiexecArgs(variablesToForward);
-spmdPort = com.mathworks.toolbox.distcomp.local.SmpdDaemonManager.getManager.getPortAndIncrementUsage;
-com.mathworks.toolbox.distcomp.local.SmpdDaemonManager.getManager.releaseUsage;
-mpiexecCommand = sprintf('%s %s %s', ...
-    sprintf('%s ', mpiargs{:}), ...
-    sprintf('-port %d', spmdPort), ...
-    sprintf('-hosts 1 127.0.0.1 %d', props.NumberOfTasks) );
-
-mpiexecFilename = mpiargs{1};
+makeMpiArgsScript;
 
 % ---------------------------------------
-%     END Specific to LOCAL
+%     
 % ---------------------------------------
-
-
-submitString = sprintf( '%s %s %s', mpiexecCommand, matlabExe, matlabArguments );
+submitString = sprintf( '%s %s %s %s', mpiexecCommand, mpiexecArgs, matlabExe, matlabArguments );
                                  
 import parallel.integration.MpiexecUtils
 schedulerData = MpiexecUtils.submit( submitString, logFile, '', ...
                                             cluster.Host, cluster.OperatingSystem, ...
-                                            mpiexecFilename );
+                                            mpiexecCommand );
 
 cluster.setJobClusterData(job, schedulerData);
 end
