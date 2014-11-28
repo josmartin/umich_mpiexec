@@ -16,7 +16,7 @@
 # Copyright 2006-2012 The MathWorks, Inc.
 
 # Create full paths to mw_smpd/mw_mpiexec if needed
-FULL_MPIEXEC=!/usr/cac/rhel6/mpiexec/bin/mpiexec
+FULL_MPIEXEC=/usr/cac/rhel6/mpiexec/bin/mpiexec
 MPIEXEC_CODE=0
 
 
@@ -30,15 +30,6 @@ cleanupAndExit() {
 }
 
 runMpiexec() {
-    
-    if [ ${MDCE_USE_ATTACH} = "on" ] ; then
-        attach="pbs_attach -j ${PBS_JOBID}"
-    else
-        attach=""
-    fi
-
-    GENVLIST="MDCE_DECODE_FUNCTION,MDCE_STORAGE_LOCATION,MDCE_STORAGE_CONSTRUCTOR,MDCE_JOB_LOCATION,MDCE_DEBUG,MDCE_SCHED_TYPE,MLM_WEB_LICENSE,MLM_WEB_USER_CRED,MLM_WEB_ID"
-
     # As a debug stage: echo the command line...
     echo \"${FULL_MPIEXEC}\"  \"${MDCE_MATLAB_EXE}\" ${MDCE_MATLAB_ARGS}
     
