@@ -1,6 +1,26 @@
 function setupUmichClusters
+% This function will automatically create 2 profiles for the user. The
+%
+%     'flux' profile allows submission of independent, communicating 
+%     and interactive pool jobs to the flux scheduler. These jobs will wait
+%     in the overall FLUX queue until resources are available.
+%
+%     'current' profile allows for submission of communicating and
+%     interactive pool jobs to the currently allocated resources. These
+%     resources are named 'mother-superior' (the node on which the initial
+%     MATLAB is running, and 'sisters' (the resources available for extra
+%     work'). Since we are using MPIEXEC as the remote process launcher,
+%     only interactive pools and communicating jobs are available in this
+%     environment.
 
-% Deal with where all jobs from FLUX and CURRENT get stored
+% Do not undertake this initialization on WORKERS - it is ONLY valid on an
+% interactive MATLAB
+if feature('isdmlworker')
+    return
+end
+
+% Where should we store the job information - the default is ~/matlabdata
+% but can be overriden by an environment variable.
 if isempty(getenv('SOME_OVERRIDE_FOR_JOB_STORAGE_LOCATION'))
     JSL = fullfile(getenv('HOME'), 'matlabdata');
 else
@@ -24,8 +44,16 @@ try
     g.JobStorageLocation = JSL;
     % The helper below simply sets all the appropriate function handles to
     % enable the MPIEXEC stuff to work
-    iSetUmichIntegrationScripts(g);
-    g.NumWorkers = str2double(getenv('PBS_NP'));
+    iSetUmichIntegrationScriptsForGeneric(g);
+    
+    % Get the number of workers for the current cluster from the PBS_NP
+    % environment variable. Note that in some cases this variable doesn't
+    % exist so we need to convert any NaN's from str2double into Inf so the
+    % scheduler can be created correctly.
+    numWorkers = str2double(getenv('PBS_NP'));
+    numWorkers(isnan(numWorkers)) = Inf;
+    g.NumWorkers = numWorkers;
+    
     g.saveProfile
 catch
     warning('Unable to configure the ''current'' profile');
@@ -42,9 +70,10 @@ try
     t = iGetOrCreateCluster('flux', 'parallel.cluster.Torque');
     t.JobStorageLocation = JSL;
     % Define the script that is used on the mother-superior to launch a
-    % communicating job.
+    % communicating job. This is critical
     t.CommunicatingJobWrapper = '/home2/josluke/umich_mpiexec/fluxCommunicatingScript.sh';
     t.SubmitArguments = '-l walltime=00:10:00 -q flux -A support_flux -m abe';
+    t.saveProfile;
 catch
     warning('Unable to configure the ''flux'' profile');
 end
@@ -75,7 +104,7 @@ else
 end
 end
 
-function iSetUmichIntegrationScripts(g)
+function iSetUmichIntegrationScriptsForGeneric(g)
 g.CommunicatingSubmitFcn = @parallel.integration.UMICH.communicatingSubmitFcn;
 g.GetJobStateFcn = @parallel.integration.UMICH.getJobStateFcn;
 g.CancelJobFcn = @parallel.integration.UMICH.cancelJobFcn;
