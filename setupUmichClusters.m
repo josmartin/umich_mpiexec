@@ -21,7 +21,7 @@ end
 
 % Where should we store the job information - the default is ~/matlabdata
 % but can be overriden by an environment variable.
-if isempty(getenv('SOME_OVERRIDE_FOR_JOB_STORAGE_LOCATION'))
+if isempty(getenv('MATLAB_CLUSTER_WORKDIR'))
     JSL = fullfile(getenv('HOME'), 'matlabdata');
 else
     % TODO - add override for JSL here
